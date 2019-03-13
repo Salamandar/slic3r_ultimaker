@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 
-import os
+import os, sys, shutil
 import re
 
-file_header_text = '''
-;START_OF_HEADER
+file_header_text = ''';START_OF_HEADER
 ;HEADER_VERSION:0.1
 ;FLAVOR:Griffin
 ;GENERATOR.NAME:Cura_SteamEngine
@@ -92,9 +91,12 @@ class GCodeProcessor():
 
     def match_time_estimation(self, string):
         match = re.search('; estimated printing time \(normal mode\) = '
-            '([0-9]*)m ([0-9]*)s', string)
+            '(?:([0-9]*)m )?([0-9]*)s', string)
         if match:
-            self.print_time = int(match.group(1))*60 + int(match.group(2))
+            minutes = match.group(1)
+            if minutes == None: minutes = '0'
+            seconds = match.group(2)
+            self.print_time = int(minutes)*60 + int(seconds)
         return match
 
     def match_volume_estimation(self, string):
@@ -135,7 +137,9 @@ class GCodeProcessor():
 
 
 
-
-processor = GCodeProcessor('cache-type 2.gcode')
-processor.get_vars_from_slic3r_gcode()
-processor.output('output.gcode')
+if __name__ == '__main__':
+    filename = sys.argv[1]
+    processor = GCodeProcessor(filename)
+    processor.get_vars_from_slic3r_gcode()
+    processor.output(filename + '_tmp')
+    shutil.move(filename + '_tmp', filename)
